@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotify Cue Player v4.3 Tablet</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark}
+*{box-sizing:border-box} body{margin:0;background:#0d0f0e;color:#f5f7f5}
+.wrap{max-width:1050px;margin:auto;padding:22px}.card{background:#171a18;border:1px solid #2b302d;border-radius:18px;padding:18px;margin-bottom:16px}
+h1{margin:0 0 5px;font-size:clamp(28px,5vw,44px)} h2{margin-top:0}.sub,.tiny{color:#aab1ac}.tiny{font-size:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+label{display:block;font-size:13px;color:#b9c0bb;margin-bottom:6px}
+input,select{width:100%;background:#0f1210;color:#fff;border:1px solid #3b423e;border-radius:10px;padding:11px 12px;font-size:16px}
+button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:15px;cursor:pointer}
+.primary{background:#1ed760;color:#07120a}.secondary{background:#2b302d;color:#fff}.stop{background:#c93636;color:white}.fade{background:#654da5;color:white}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.hidden{display:none}
+.stage{text-align:center;padding:28px 18px}.cue-label{font-size:14px;letter-spacing:.15em;color:#96a099}.cue-time{font-size:clamp(52px,12vw,92px);line-height:1;margin:8px 0 20px;font-variant-numeric:tabular-nums}
+.stage .main{font-size:20px;padding:18px 25px;min-width:175px}
+.status{min-height:24px;margin-top:13px;color:#cbd2cd}.err{color:#ff9a9a}
+.volumeBox{max-width:650px;margin:22px auto 0}.volumeLine{display:grid;grid-template-columns:65px 1fr 65px;align-items:center;gap:12px}
+input[type=range]{padding:0;accent-color:#1ed760}.volNum{font-size:20px;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #2a2f2c;padding:8px 6px;text-align:left}th{color:#aab1ac;font-size:12px}
+td:first-child{width:50px}td input{max-width:120px;padding:8px}.active{background:#202721}
+.scroll{max-height:500px;overflow:auto}.note{padding:10px 12px;border-radius:10px;background:#111512;color:#cbd2cd}
+@media(max-width:700px){.row,.row3{grid-template-columns:1fr}.wrap{padding:12px}.stage .main{width:100%}.volumeLine{grid-template-columns:55px 1fr 55px}}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Spotify Cue Player <small style="font-size:.35em;color:#8e9791">v4.3</small></h1>
+<p class="sub">Eenvoudige bediening voor playlists tot 70 nummers</p>
+<div id="spotifyPill" style="display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border-radius:999px;background:#351b1b;border:1px solid #6f3030;font-weight:800;margin-bottom:16px">
+<span id="spotifyDot" style="width:12px;height:12px;border-radius:50%;background:#e54848;display:inline-block"></span>
+<span id="spotifyPillText">Spotify niet verbonden</span>
+</div>
+
+<details class="card" id="settingsPanel">
+<summary style="cursor:pointer;font-weight:800;font-size:18px">Instellingen</summary>
+<div style="height:14px"></div>
+<div class="row">
+<div><label>Spotify Client ID</label><input id="clientId" placeholder="plak hier je Client ID"></div>
+<div><label>Redirect URI</label><input value="https://miepmiep73.github.io/spotifycueplayer/" readonly></div>
+</div>
+<div class="btns"><button class="primary" id="login">Koppel Spotify</button><button class="secondary hidden" id="logout">Koppeling wissen</button></div>
+<p class="tiny">PKCE: geen Client Secret nodig. De Client ID blijft lokaal in deze browser.</p>
+</details>
+
+<details class="card">
+<summary style="cursor:pointer;font-weight:800;font-size:18px">Playlist & apparaat</summary>
+<div style="height:14px"></div>
+
+<div class="row3">
+<div><label>Spotify-playlistlink</label><input id="playlist" placeholder="https://open.spotify.com/playlist/..."></div>
+<div><label>Aantal nummers (1–70)</label><input id="count" type="number" min="1" max="70" value="17"></div>
+<div><label>Spotify-apparaat</label><select id="device"><option value="">Automatisch / actief</option></select></div>
+</div>
+<div class="btns">
+<button class="secondary" id="apply">Playlist / aantal toepassen</button>
+<button class="secondary" id="devices">Ververs apparaten</button>
+<button class="secondary" id="openSpotify">Open playlist in Spotify</button>
+</div>
+<p class="tiny">De Cue Player werkt op nummerpositie: 1, 2, 3…</p>
+</details>
+
+<section class="card stage">
+<div class="cue-label" id="cueLabel">NUMMER 1 VAN 17</div><div class="cue-time" id="cueTime">00:00</div>
+<div class="btns" style="justify-content:center">
+<button class="secondary main" id="prev">← Vorige</button><button class="primary main" id="play">▶ START</button><button class="stop main" id="stop">■ STOP</button><button class="secondary main" id="next">Volgende →</button>
+</div>
+<div class="volumeBox">
+<div class="volumeLine"><span>Volume</span><input id="volume" type="range" min="0" max="100" value="80"><span class="volNum"><span id="volVal">80</span>%</span></div>
+<div class="btns" style="justify-content:center">
+<button class="fade" data-fade="3">↘ FADE OUT</button>
+</div>
+</div>
+
+<input id="fadeInTarget" type="hidden" value="80"><input id="fadeInSeconds" type="hidden" value="1.5">
+<div class="status" id="status">Nog niet gekoppeld met Spotify.</div>
+</section>
+
+<details class="card">
+<summary style="cursor:pointer;font-weight:800;font-size:18px">Cuebestand</summary><div style="height:10px"></div>
+<div class="btns">
+<button class="secondary" id="saveFile">Cuebestand opslaan</button>
+<button class="secondary" id="loadFile">Cuebestand openen</button>
+<input id="fileInput" type="file" accept=".json,application/json" class="hidden">
+</div>
+<p class="tiny">Bevat playlistlink en cuepunten, maar geen Spotify-login of tokens.</p>
+</details>
+
+<details class="card">
+<summary style="cursor:pointer;font-weight:800;font-size:18px">Starttijden aanpassen</summary><div style="height:10px"></div>
+<div class="note">Gebruik <b>mm:ss</b>, bijvoorbeeld 00:30 of 01:14. Maximaal 70 regels.</div>
+<div class="scroll"><table><thead><tr><th>#</th><th>Starttijd</th><th></th></tr></thead><tbody id="cueTable"></tbody></table></div>
+<div class="btns"><button class="secondary" id="zeroAll">Alle tijden 00:00</button></div>
+</details>
+</div>
+<script>
+const REDIRECT_URI='https://miepmiep73.github.io/spotifycueplayer/';
+const SCOPES='user-modify-playback-state user-read-playback-state';
+const TEST_PLAYLIST='https://open.spotify.com/playlist/6ZCNRKmiqfd1QeBKHw9S4d';
+const TEST_CUES=['00:00','00:27','00:43','01:06','00:18','00:51','01:14','00:36','00:22','00:58','01:09','00:31','00:47','01:02','00:15','00:39','00:54'];
+let playlist=localStorage.getItem('cue_playlist')||TEST_PLAYLIST;
+let cues=JSON.parse(localStorage.getItem('cue_times_v2')||'null')||[...TEST_CUES];
+let current=Number(localStorage.getItem('cue_index_v2')||0); let fadeAbort=0; let volumeTimer=null;
+const $=x=>document.getElementById(x);
+$('clientId').value=localStorage.getItem('spotify_client_id')||'30ad2d74c12748c8a51d52c6a3008694';$('playlist').value=playlist;$('count').value=cues.length;
+$('volume').value=localStorage.getItem('cue_volume')||80;$('volVal').textContent=$('volume').value;
+$('fadeInTarget').value=localStorage.getItem('cue_fadein_target')||80;$('fadeInSeconds').value=localStorage.getItem('cue_fadein_seconds')||1.5;
+function status(m,e=false){$('status').textContent=m;$('status').className='status'+(e?' err':'')}
+function spotifyPill(ok,text){
+  $('spotifyDot').style.background=ok?'#1ed760':'#e54848';
+  $('spotifyPill').style.background=ok?'#14351f':'#351b1b';
+  $('spotifyPill').style.borderColor=ok?'#287c43':'#6f3030';
+  $('spotifyPillText').textContent=text||(ok?'Spotify verbonden':'Spotify niet verbonden');
+}
+
+function save(){localStorage.setItem('cue_playlist',playlist);localStorage.setItem('cue_times_v2',JSON.stringify(cues));localStorage.setItem('cue_index_v2',current)}
+function validTime(t){return /^\d{1,3}:[0-5]\d$/.test(t.trim())}
+function normTime(t){let [m,s]=t.trim().split(':');return String(Number(m)).padStart(2,'0')+':'+s}
+function toMs(t){let [m,s]=t.split(':').map(Number);return(m*60+s)*1000}
+function playlistId(v){let m=v.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);if(m)return m[1];m=v.match(/spotify:playlist:([A-Za-z0-9]+)/);return m?m[1]:null}
+function render(){if(current>=cues.length)current=cues.length-1;if(current<0)current=0;$('cueLabel').textContent=`NUMMER ${current+1} VAN ${cues.length}`;$('cueTime').textContent=cues[current];let b=$('cueTable');b.innerHTML='';cues.forEach((t,i)=>{let tr=document.createElement('tr');if(i===current)tr.className='active';tr.innerHTML=`<td>${i+1}</td><td><input value="${t}" aria-label="Starttijd nummer ${i+1}"></td><td><button class="secondary" style="padding:7px 10px">Kies</button></td>`;let inp=tr.querySelector('input');inp.onchange=()=>{if(!validTime(inp.value)){alert('Gebruik mm:ss, bijvoorbeeld 00:30');inp.value=cues[i];return}cues[i]=normTime(inp.value);save();render()};tr.querySelector('button').onclick=()=>{current=i;save();render();scrollTo({top:0,behavior:'smooth'})};b.appendChild(tr)});save()}
+function randomString(n=64){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~',a=new Uint8Array(n);crypto.getRandomValues(a);return Array.from(a,b=>c[b%c.length]).join('')}
+async function sha256(s){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))}
+function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_')}
+async function login(){let id=$('clientId').value.trim();if(!id)return status('Vul eerst je Spotify Client ID in.',true);localStorage.setItem('spotify_client_id',id);let v=randomString(),ch=b64url(await sha256(v)),st=randomString(24);localStorage.setItem('pkce_verifier',v);localStorage.setItem('oauth_state',st);let u=new URL('https://accounts.spotify.com/authorize');u.search=new URLSearchParams({response_type:'code',client_id:id,scope:SCOPES,redirect_uri:REDIRECT_URI,code_challenge_method:'S256',code_challenge:ch,state:st});location.href=u}
+function storeToken(d){localStorage.setItem('spotify_access_token',d.access_token);if(d.refresh_token)localStorage.setItem('spotify_refresh_token',d.refresh_token);localStorage.setItem('spotify_token_expiry',Date.now()+(d.expires_in||3600)*1000-60000)}
+async function exchange(){let p=new URLSearchParams(location.search),code=p.get('code');if(!code)return;if(p.get('state')!==localStorage.getItem('oauth_state'))return status('OAuth state klopt niet.',true);try{let r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:localStorage.getItem('spotify_client_id'),grant_type:'authorization_code',code,redirect_uri:REDIRECT_URI,code_verifier:localStorage.getItem('pkce_verifier')})}),d=await r.json();if(!r.ok)throw Error(d.error_description||d.error);storeToken(d);history.replaceState({},document.title,REDIRECT_URI);authUI();spotifyPill(true,'Spotify gekoppeld');status('Spotify gekoppeld.');await loadDevices()}catch(e){status('Koppelen mislukt: '+e.message,true)}}
+async function token(){let t=localStorage.getItem('spotify_access_token'),ex=Number(localStorage.getItem('spotify_token_expiry')||0);if(t&&Date.now()<ex)return t;let ref=localStorage.getItem('spotify_refresh_token'),id=localStorage.getItem('spotify_client_id');if(!ref||!id)return null;let r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:id,grant_type:'refresh_token',refresh_token:ref})}),d=await r.json();if(!r.ok)return null;storeToken({...d,refresh_token:d.refresh_token||ref});return d.access_token}
+async function api(path,opt={}){let t=await token();if(!t)throw Error('Niet gekoppeld met Spotify.');let h={Authorization:`Bearer ${t}`,...(opt.headers||{})};if(opt.body)h['Content-Type']='application/json';let r=await fetch('https://api.spotify.com/v1'+path,{...opt,headers:h});if(r.status===204)return null;let d=null;try{d=await r.json()}catch{}if(!r.ok)throw Error(d?.error?.message||`Spotify fout ${r.status}`);return d}
+function deviceQ(extra=''){let id=$('device').value;return '?'+new URLSearchParams({...extra,...(id?{device_id:id}:{})}).toString()}
+async function loadDevices(){try{let d=await api('/me/player/devices'),s=$('device'),old=s.value;s.innerHTML='<option value="">Automatisch / actief</option>';for(let x of d.devices||[]){let o=document.createElement('option');o.value=x.id;o.textContent=`${x.name} (${x.type})${x.is_active?' — actief':''}`;if(x.is_active&&!old)o.selected=true;s.appendChild(o)}if(old)s.value=old;let has=(d.devices||[]).length>0;spotifyPill(has,has?'Spotify verbonden':'Spotify niet beschikbaar');status(has?'Klaar.':'Open Spotify en speel heel even iets af.')}catch(e){spotifyPill(false,'Spotify niet verbonden');status('Apparaten ophalen mislukt: '+e.message,true)}}
+async function play(){
+  let id=playlistId(playlist);
+  if(!id)return status('Geen geldige Spotify-playlistlink.',true);
+  const target=80;
+  const seconds=1.5;
+  try{
+    fadeAbort++;
+    $('volume').value=0;
+    $('volVal').textContent=0;
+    await setVolume(0,true);
+    await api('/me/player/play'+deviceQ(),{
+      method:'PUT',
+      body:JSON.stringify({
+        context_uri:`spotify:playlist:${id}`,
+        offset:{position:current},
+        position_ms:toMs(cues[current])
+      })
+    });
+    status(`Nummer ${current+1} gestart vanaf ${cues[current]} — fade-in naar 80%.`);
+    await new Promise(r=>setTimeout(r,120));
+    await fadeInTo(target,seconds);
+    $('volume').value=80;
+    $('volVal').textContent=80;
+    localStorage.setItem('cue_volume','80');
+    status(`Speelt nummer ${current+1} vanaf ${cues[current]} op 80%.`);
+  }catch(e){
+    status('Starten mislukt: '+e.message+(/device/i.test(e.message)?' Open Spotify op een apparaat en probeer opnieuw.':''),true);
+  }
+}
+async function stop(){try{fadeAbort++;await api('/me/player/pause'+deviceQ(),{method:'PUT'});status('Gestopt / gepauzeerd.')}catch(e){status('Stoppen mislukt: '+e.message,true)}}
+async function setVolume(v,quiet=false){try{await api('/me/player/volume'+deviceQ({volume_percent:String(Math.round(v))}),{method:'PUT'});if(!quiet)status(`Volume ${Math.round(v)}%.`)}catch(e){if(!quiet)status('Volume wijzigen mislukt: '+e.message,true)}}
+async function fade(seconds){let my=++fadeAbort,start=Number($('volume').value),steps=Math.max(5,Math.round(seconds*4));status(`Fade-out ${seconds} sec…`);for(let i=1;i<=steps;i++){if(my!==fadeAbort)return;let v=Math.round(start*(1-i/steps));$('volume').value=v;$('volVal').textContent=v;await setVolume(v,true);await new Promise(r=>setTimeout(r,seconds*1000/steps))}if(my===fadeAbort){await stop();status(`Fade-out klaar; Spotify gepauzeerd. Zet volume weer omhoog vóór de volgende start.`)}}
+
+async function fadeInTo(target=80, seconds=1.5){
+  let my=++fadeAbort;
+  target=Math.max(0,Math.min(100,Number(target)||80));
+  seconds=Math.max(0.2,Math.min(5,Number(seconds)||1.5));
+  let steps=Math.max(4,Math.round(seconds*5));
+  $('volume').value=0;$('volVal').textContent=0;
+  await setVolume(0,true);
+  for(let i=1;i<=steps;i++){
+    if(my!==fadeAbort)return;
+    let v=Math.round(target*i/steps);
+    $('volume').value=v;$('volVal').textContent=v;
+    await setVolume(v,true);
+    await new Promise(r=>setTimeout(r,seconds*1000/steps));
+  }
+  localStorage.setItem('cue_volume',String(target));
+}
+async function nextWithFadeIn(){
+  if(current>=cues.length-1)return;
+  current++;render();
+  const target=80;
+  const seconds=1.5;
+  let id=playlistId(playlist);
+  if(!id)return status('Geen geldige Spotify-playlistlink.',true);
+  try{
+    fadeAbort++;
+    $('volume').value=0;
+    $('volVal').textContent=0;
+    await setVolume(0,true);
+    await api('/me/player/play'+deviceQ(),{
+      method:'PUT',
+      body:JSON.stringify({
+        context_uri:`spotify:playlist:${id}`,
+        offset:{position:current},
+        position_ms:toMs(cues[current])
+      })
+    });
+    status(`Nummer ${current+1} gestart vanaf ${cues[current]} — fade-in naar 80%.`);
+    await new Promise(r=>setTimeout(r,120));
+    await fadeInTo(target,seconds);
+    $('volume').value=80;
+    $('volVal').textContent=80;
+    localStorage.setItem('cue_volume','80');
+    await setVolume(80,true);
+    status(`Speelt nummer ${current+1} vanaf ${cues[current]} op 80%.`);
+  }catch(e){
+    status('Volgende starten mislukt: '+e.message,true);
+  }
+}
+
+function apply(){let id=playlistId($('playlist').value.trim()),n=Math.max(1,Math.min(70,Number($('count').value)||1));if(!id)return status('Plak een geldige Spotify-playlistlink.',true);playlist=$('playlist').value.trim();while(cues.length<n)cues.push('00:00');cues=cues.slice(0,n);$('count').value=n;current=Math.min(current,n-1);render();status(`Playlist ingesteld met ${n} cue${n===1?'':'s'}.`)}
+function saveFile(){let data={format:'spotify-cue-player',version:2,playlist_url:playlist,count:cues.length,cues,default_volume:Number($('volume').value)};let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='spotify-cues.json';a.click();URL.revokeObjectURL(a.href)}
+async function loadFile(file){try{let d=JSON.parse(await file.text());if(!playlistId(d.playlist_url)||!Array.isArray(d.cues)||d.cues.length<1||d.cues.length>70||d.cues.some(x=>!validTime(x)))throw Error('ongeldig cuebestand');playlist=d.playlist_url;cues=d.cues.map(normTime);current=0;$('playlist').value=playlist;$('count').value=cues.length;if(Number.isFinite(d.default_volume)){$('volume').value=Math.max(0,Math.min(100,d.default_volume));$('volVal').textContent=$('volume').value}render();status(`Cuebestand geladen: ${cues.length} nummers.`)}catch(e){status('Cuebestand openen mislukt: '+e.message,true)}}
+function logout(){['spotify_access_token','spotify_refresh_token','spotify_token_expiry','pkce_verifier','oauth_state'].forEach(k=>localStorage.removeItem(k));authUI();spotifyPill(false,'Spotify niet verbonden');status('Spotify-koppeling gewist.')}
+function authUI(){$('logout').classList.toggle('hidden',!(localStorage.getItem('spotify_access_token')||localStorage.getItem('spotify_refresh_token')))}
+$('login').onclick=login;$('logout').onclick=logout;$('devices').onclick=loadDevices;$('apply').onclick=apply;$('play').onclick=play;$('stop').onclick=stop;
+$('next').onclick=nextWithFadeIn;$('prev').onclick=()=>{if(current>0){current--;render()}};
+$('openSpotify').onclick=()=>{let id=playlistId(playlist);if(id)window.open('https://open.spotify.com/playlist/'+id,'_blank')};
+$('zeroAll').onclick=()=>{cues=cues.map(()=> '00:00');render();status('Alle cuepunten op 00:00 gezet.')};
+$('volume').oninput=()=>{$('volVal').textContent=$('volume').value;localStorage.setItem('cue_volume',$('volume').value);clearTimeout(volumeTimer);volumeTimer=setTimeout(()=>setVolume(Number($('volume').value)),120)};
+document.querySelectorAll('[data-fade]').forEach(b=>b.onclick=()=>fade(Number(b.dataset.fade)));
+$('saveFile').onclick=saveFile;$('loadFile').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value=''};
+$('clientId').onchange=()=>localStorage.setItem('spotify_client_id',$('clientId').value.trim());
+$('fadeInTarget').onchange=()=>localStorage.setItem('cue_fadein_target',$('fadeInTarget').value);$('fadeInSeconds').onchange=()=>localStorage.setItem('cue_fadein_seconds',$('fadeInSeconds').value);
+render();authUI();exchange().then(async()=>{if(!new URLSearchParams(location.search).get('code')&&await token()){status('Spotify is gekoppeld.');await loadDevices()}else if(!localStorage.getItem('spotify_access_token')&&!localStorage.getItem('spotify_refresh_token')){spotifyPill(false,'Spotify niet verbonden')}});setInterval(async()=>{if(await token())await loadDevices()},30000);
+</script></body></html>
